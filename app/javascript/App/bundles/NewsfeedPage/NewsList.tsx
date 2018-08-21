@@ -5,6 +5,7 @@ declare var window: {
 
 import * as React from 'react'
 import InfiniteScroll from 'react-infinite-scroll-component'
+import VisibilitySensor from 'react-visibility-sensor';
 import _ from 'lodash'
 import NewsListItem from './NewsListItem'
 import LoadingIndicator from '../../components/LoadingIndicator'
@@ -74,6 +75,16 @@ class NewsList extends React.Component<Props, State> {
     }, 500)
   }
 
+  onVisibleChange = (isVisible) => {
+    console.log('change');
+    if (!isVisible) {
+      this.visibleCount--;
+    } else {
+      this.visibleCount++;
+    }
+    document.title = this.visibleCount + ' | ' + this.documentTitle;
+  } 
+
   renderView() {
     
     if (this.props.initialRenderTips && window.isMobile) {
@@ -103,18 +114,30 @@ class NewsList extends React.Component<Props, State> {
 
     const readNewsIds = JSON.parse(localStorage.getItem('readNews')) || []
 
-    const mappedItems = this.props.sortedNewsItems.map((newsItem) => {
+    const mappedItems = this.props.sortedNewsItems.map((newsItem, index) => {
       const hasRead = readNewsIds.includes(newsItem.id)
       return (
-        <NewsListItem
-          key={newsItem.id}
-          newsItem={newsItem}
-          {...this.props}
-          setActiveNewsItem={this.setActiveNewsItem}
-          // @ts-ignore FIME
-          selectCoin={(symbol) => this.selectCoin(symbol)} 
-          hasRead={hasRead}
-        />
+        <VisibilitySensor 
+          key={index} 
+          onChange={({isVisible}) => {
+            if (isVisible) {
+              this.props.onNewsItemShown(newsItem.id);
+            }
+          }}
+          scrollCheck={true}
+          resizeCheck={true}
+        >
+          <NewsListItem
+            key={newsItem.id}
+            newsItem={newsItem}
+            {...this.props}
+            setActiveNewsItem={this.setActiveNewsItem}
+            // @ts-ignore FIME
+            selectCoin={(symbol) => this.selectCoin(symbol)} 
+            hasRead={hasRead}
+            isUnseen={!hasRead && !this.props.isNewsSeen(newsItem.id)}
+          />
+        </VisibilitySensor>
       )
     })
 

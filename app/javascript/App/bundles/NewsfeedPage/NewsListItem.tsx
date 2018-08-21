@@ -32,6 +32,7 @@ const NewsListItem = (props) => {
     setActiveNewsItem,
     preRender,
     hasRead,
+    isUnseen,
   } = props
   let className = 'b--b tiber overflow-hidden'
   if (activeEntity) {
@@ -43,6 +44,16 @@ const NewsListItem = (props) => {
   const newsItemTitle = newsItem.title
     .replace(/<h1>/g, '')
     .replace(/<\/h1>/g, '')
+
+
+  let titleStyle = {};
+  if (hasRead) {
+    titleStyle.color = '#999';
+  }
+
+  if (isUnseen) {
+    titleStyle.color = 'red';
+  }
 
   return (
     <div
@@ -64,7 +75,7 @@ const NewsListItem = (props) => {
               ).parentNode.scrollTop = 0
           }}
         >
-          <h4 className="pointer mb2 f5" style={hasRead ? { color: '#999' } : {}}>
+          <h4 className="pointer mb2 f5" style={titleStyle}>
             {newsItemTitle}
           </h4>
         </Link>

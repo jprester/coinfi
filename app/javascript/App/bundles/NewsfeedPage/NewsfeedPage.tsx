@@ -23,6 +23,12 @@ import localAPI from '../../lib/localAPI'
 import { NewsItem, ContentType } from './types';
 import { CoinList, Coin } from '../common/types';
 
+const STATUSES = {
+  LOADING: 'LOADING',
+  INFINITE_SCROLL_LOADING: 'INFINITE_SCROLL_LOADING',
+  READY: 'READY',
+}
+
 interface Props extends RouteComponentProps<any> {
   coinSlug?: string,
   newsItemId?: string,
@@ -33,23 +39,67 @@ interface Props extends RouteComponentProps<any> {
   isNewsfeedReady: boolean,
   isCoinlistLoading: boolean,
   isCoinlistReady: boolean,
-  fetchNewsItemsForCoin: (coinSlug: string) => void,
-  fetchAllNewsItems: () => void, 
-  fetchMoreNewsItems: () => any, 
+  fetchNewsItemsForCoin: (coinSlug: string) => Promise<any>,
+  fetchAllNewsItems: () => Promise<any>, 
+  fetchMoreNewsItems: () => Promise<any>,
+  fetchNewNewsItems: () => Promise<any>,
 };
 
 interface State {
   initialRenderTips: boolean,
   newsfeedTips: boolean,
+  unseenNews: number[],
+  isWindowFocused: boolean,
 };
 
 class NewsfeedPage extends React.Component<Props, State> {
+
+  private newNewsItemsLoadingTimout = null;
+  private documentTitle = document.title;
+  private visibleCount = 0;
+
   state = {
     initialRenderTips: false,
     newsfeedTips: true,
+    unseenNews: [],
+    isWindowFocused: true,
+  }
+
+  // resetFetchNewNewsItems = () => {
+  //   clearTimeout(this.newNewsItemsLoadingTimout);
+  //   this.newNewsItemsLoadingTimout = setTimeout(() => {
+  //     this.props.fetchNewNewsItems().then(() => this.resetFetchNewNewsItems())
+  //   });
+  // }
+
+  updateTitle = () => {
+    if (this.state.unseenNews.length === 0) {
+      document.title = this.documentTitle;
+    } else {
+      document.title = this.state.unseenNews.length + ' | ' + this.documentTitle;
+    }
+  }
+
+  fetchNewNewsItems = () => {
+    this.props.fetchNewNewsItems().then(news => {
+      if (!this.state.isWindowFocused) {
+        const ids = news.map(elem => elem.id)
+        console.log(ids);
+        this.setState({
+          unseenNews: _.uniq(this.state.unseenNews.concat(ids))
+        }, this.updateTitle)
+      }
+    })
   }
 
   handleResize = debounce(() => this.forceUpdate(), 500)
+
+  handleOnBlur = () => {
+    console.log('onBlur');
+    this.setState({ isWindowFocused: false });
+  }
+
+  handleOnFocus = () => this.setState({ isWindowFocused: true })
 
   getContentType(): ContentType {
     if (typeof this.props.coinSlug !== 'undefined') {
@@ -65,9 +115,19 @@ class NewsfeedPage extends React.Component<Props, State> {
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize)
+    window.addEventListener('blur', this.handleOnBlur);
+    window.addEventListener('focus', this.handleOnFocus);
+
+    window.fetchNewNewsItems = () => { 
+      setTimeout(() => {
+        this.fetchNewNewsItems()
+      }, 2000);
+    }
+
+    // this.newNewsItemsLoadingTimout = setTimeout(this.resetFetchNewNewsItems, 6000);
 
     if (this.getContentType() === "coin") {
-        this.props.fetchNewsItemsForCoin(this.props.coinSlug)
+        this.props.fetchNewsItemsForCoin(this.props.coinSlug);
     } else {
       if (this.props.newslist.length > 0) {
         return;
@@ -78,6 +138,8 @@ class NewsfeedPage extends React.Component<Props, State> {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('blur', this.handleOnBlur);
+    window.removeEventListener('focus', this.handleOnFocus);
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -150,6 +212,8 @@ class NewsfeedPage extends React.Component<Props, State> {
                   initialRenderTips={this.state.initialRenderTips}
                   fetchMoreNewsFeed={this.props.fetchMoreNewsItems}
                   closeTips={this.closeTips}
+                  onNewsItemShown={(id) => {}}
+                  isNewsSeen={(id) => {}}
                 />
             </>
           }
