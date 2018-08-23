@@ -49,14 +49,14 @@ interface State {
   initialRenderTips: boolean,
   newsfeedTips: boolean,
   unseenNews: number[],
-  isWindowFocused: boolean,
 };
 
 class NewsfeedPage extends React.Component<Props, State> {
 
   private newNewsItemsLoadingTimout = null;
   private documentTitle = document.title;
-  private visibleCount = 0;
+  private tmpVar = [];
+  private timoutVar = null;
 
   state = {
     initialRenderTips: false,
@@ -80,11 +80,27 @@ class NewsfeedPage extends React.Component<Props, State> {
     }
   }
 
+  onNewsItemShown = (id) => {
+    // Question: is there way to accumulate/debounce function calls to do one function call with merged arguments?
+    // this timout way looks dirty
+    if(this.timoutVar !== null) clearTimeout(this.timoutVar);
+    if(this.tmpVar === null) this.tmpVar = [];
+
+    this.tmpVar.push(id);
+
+    this.timoutVar = setTimeout(() => {
+      this.setState({
+        unseenNews: this.state.unseenNews.filter(_id => !this.tmpVar.includes(_id))
+      }, () => this.updateTitle())
+      this.timoutVar = null;
+      this.tmpVar = null;
+    }, 250);
+  }
+
   fetchNewNewsItems = () => {
     this.props.fetchNewNewsItems().then(news => {
       if (!this.state.isWindowFocused) {
         const ids = news.map(elem => elem.id)
-        console.log(ids);
         this.setState({
           unseenNews: _.uniq(this.state.unseenNews.concat(ids))
         }, this.updateTitle)
@@ -94,12 +110,9 @@ class NewsfeedPage extends React.Component<Props, State> {
 
   handleResize = debounce(() => this.forceUpdate(), 500)
 
-  handleOnBlur = () => {
-    console.log('onBlur');
-    this.setState({ isWindowFocused: false });
-  }
-
-  handleOnFocus = () => this.setState({ isWindowFocused: true })
+  handleOnBlur = () => this.setState({ isWindowFocused: false })
+  
+  handleOnFocus = () => this.setState({ isWindowFocused: true }, () => this.updateTitle())
 
   getContentType(): ContentType {
     if (typeof this.props.coinSlug !== 'undefined') {
@@ -135,7 +148,7 @@ class NewsfeedPage extends React.Component<Props, State> {
       this.props.fetchAllNewsItems();
     }
   }
-
+  
   componentWillUnmount() {
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('blur', this.handleOnBlur);
@@ -204,6 +217,7 @@ class NewsfeedPage extends React.Component<Props, State> {
                   newsfeedTips={this.state.newsfeedTips}
                 />
                 <NewsList
+                  isWindowFocused={this.state.isWindowFocused}
                   isLoading={this.props.isNewsfeedLoading}
                   isInfiniteScrollLoading={this.props.isNewsfeedLoadingMoreItems}
                   // @ts-ignore FIXME
@@ -212,8 +226,8 @@ class NewsfeedPage extends React.Component<Props, State> {
                   initialRenderTips={this.state.initialRenderTips}
                   fetchMoreNewsFeed={this.props.fetchMoreNewsItems}
                   closeTips={this.closeTips}
-                  onNewsItemShown={(id) => {}}
-                  isNewsSeen={(id) => {}}
+                  onNewsItemShown={(id) => this.onNewsItemShown(id)}
+                  unseenNews={this.state.unseenNews}
                 />
             </>
           }

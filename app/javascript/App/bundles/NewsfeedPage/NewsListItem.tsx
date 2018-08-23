@@ -34,7 +34,7 @@ const NewsListItem = (props) => {
     hasRead,
     isUnseen,
   } = props
-  let className = 'b--b tiber overflow-hidden'
+  let className = 'b--b tiber overflow-hidden news-list-item'
   if (activeEntity) {
     const { type, id } = activeEntity
     if (type === 'newsItem' && id === newsItem.id) className += ' bg-foam'
@@ -51,13 +51,14 @@ const NewsListItem = (props) => {
     titleStyle.color = '#999';
   }
 
+  let cn = className;
   if (isUnseen) {
-    titleStyle.color = 'red';
+    cn += ' unseen';
   }
 
   return (
     <div
-      className={className}
+      className={cn}
       style={{ height: props.height || 'auto' }}
     >
       <div className="pa-default">

@@ -23,6 +23,8 @@ interface Props {
   // initialRenderTips: boolean,
   // fetchMoreNewsFeed: () => void,
   // closeTips: () => void,
+  // onNewsItemShown: (id) => void,
+  // isNewsSeen: (id) => boolean,
   isLoading?: boolean,
   isInfiniteScrollLoading?: boolean,
   activeFilters?: any,
@@ -30,6 +32,9 @@ interface Props {
   initialRenderTips?: boolean,
   fetchMoreNewsFeed?: () => void,
   closeTips?: () => void,
+  onNewsItemShown?: (id) => void,
+  isNewsSeen?: (id) => boolean,
+  unseenNews: number[],
 };
 
 interface State {
@@ -75,16 +80,6 @@ class NewsList extends React.Component<Props, State> {
     }, 500)
   }
 
-  onVisibleChange = (isVisible) => {
-    console.log('change');
-    if (!isVisible) {
-      this.visibleCount--;
-    } else {
-      this.visibleCount++;
-    }
-    document.title = this.visibleCount + ' | ' + this.documentTitle;
-  } 
-
   renderView() {
     
     if (this.props.initialRenderTips && window.isMobile) {
@@ -118,14 +113,13 @@ class NewsList extends React.Component<Props, State> {
       const hasRead = readNewsIds.includes(newsItem.id)
       return (
         <VisibilitySensor 
-          key={index} 
-          onChange={({isVisible}) => {
+          key={newsItem.id}
+          onChange={(isVisible) => {
             if (isVisible) {
-              this.props.onNewsItemShown(newsItem.id);
+                this.props.onNewsItemShown(newsItem.id);
             }
           }}
-          scrollCheck={true}
-          resizeCheck={true}
+          active={this.props.isWindowFocused}
         >
           <NewsListItem
             key={newsItem.id}
@@ -135,7 +129,7 @@ class NewsList extends React.Component<Props, State> {
             // @ts-ignore FIME
             selectCoin={(symbol) => this.selectCoin(symbol)} 
             hasRead={hasRead}
-            isUnseen={!hasRead && !this.props.isNewsSeen(newsItem.id)}
+            isUnseen={!hasRead && this.props.unseenNews.includes(newsItem.id)}
           />
         </VisibilitySensor>
       )
