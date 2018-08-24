@@ -15,16 +15,7 @@ import scrollHelper from './../../scrollHelper'
 import { NewsItem } from './types';
 
 interface Props {
-  // FIXME commented props are right
-  // isLoading: boolean,
-  // isInfiniteScrollLoading: boolean,
-  // activeFilters: any,
-  // sortedNewsItems: Array<NewsItem>,
-  // initialRenderTips: boolean,
-  // fetchMoreNewsFeed: () => void,
-  // closeTips: () => void,
-  // onNewsItemShown: (id) => void,
-  // isNewsSeen: (id) => boolean,
+  // FIXME all props must be required
   isLoading?: boolean,
   isInfiniteScrollLoading?: boolean,
   activeFilters?: any,
@@ -34,7 +25,8 @@ interface Props {
   closeTips?: () => void,
   onNewsItemShown?: (id) => void,
   isNewsSeen?: (id) => boolean,
-  unseenNews: number[],
+  unseenNews?: number[],
+  isWindowFocused?: boolean,
 };
 
 interface State {
@@ -120,7 +112,6 @@ class NewsList extends React.Component<Props, State> {
             }
           }}
           active={this.props.isWindowFocused}
-          intervalDelay={1000}
         >
           <NewsListItem
             key={newsItem.id}
@@ -130,7 +121,7 @@ class NewsList extends React.Component<Props, State> {
             // @ts-ignore FIME
             selectCoin={(symbol) => this.selectCoin(symbol)} 
             hasRead={hasRead}
-            isUnseen={!hasRead && this.props.unseenNews.includes(newsItem.id)}
+            isUnseen={!hasRead && this.props.unseenNews.indexOf(newsItem.id) !== -1}
           />
         </VisibilitySensor>
       )
